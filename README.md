@@ -1,0 +1,3 @@
+这是一个claude code做的musicplayer
+下载后安装需要的依赖库，运行app.py
+最后在浏览器打开localhost:5000
