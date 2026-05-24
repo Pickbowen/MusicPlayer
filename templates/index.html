@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网易云音乐播放器</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="player-container">
+        <!-- 搜索栏 -->
+        <div class="search-area">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索歌曲或输入歌曲 ID..." autofocus>
+                <button id="searchBtn">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+        </div>
+
+        <!-- 播放器主体 -->
+        <div class="player-body">
+            <div class="cover-wrapper">
+                <div class="cover-rotate" id="coverRotate">
+                    <img id="albumArt" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'%3E%3Crect width='280' height='280' fill='%23333'/%3E%3Ctext x='140' y='145' text-anchor='middle' font-size='60' fill='%23666'%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E" alt="专辑封面">
+                    <div class="cover-spin-line"></div>
+                </div>
+            </div>
+
+            <div class="song-info">
+                <h2 id="songTitle" class="song-title">选择一个歌曲</h2>
+                <p id="songArtist" class="song-artist">开始你的音乐之旅</p>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="progress-area">
+                <span id="currentTime" class="time">00:00</span>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-bar-bg"></div>
+                    <div class="progress-bar-fill" id="progressFill"></div>
+                    <div class="progress-thumb" id="progressThumb"></div>
+                </div>
+                <span id="totalTime" class="time">00:00</span>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div class="controls">
+                <button id="prevBtn" class="ctrl-btn" title="上一首">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                    </svg>
+                </button>
+                <button id="playBtn" class="ctrl-btn play-btn" title="播放/暂停">
+                    <svg id="playIcon" viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </button>
+                <button id="nextBtn" class="ctrl-btn" title="下一首">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 音量控制 -->
+            <div class="volume-area">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" class="vol-icon">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+                <div class="volume-bar" id="volumeBar">
+                    <div class="volume-bar-bg"></div>
+                    <div class="volume-bar-fill" id="volumeFill"></div>
+                    <div class="volume-thumb" id="volumeThumb"></div>
+                </div>
+            </div>
+
+            <!-- 歌词 -->
+            <div class="lyrics-area" id="lyricsArea">
+                <div class="lyrics-scroll" id="lyricsScroll"></div>
+            </div>
+
+            <!-- 播放列表 -->
+            <div class="playlist" id="playlist">
+                <div class="playlist-header">
+                    <span>播放列表</span>
+                    <div class="playlist-header-right">
+                        <span id="playlistCount" class="playlist-count">0 首</span>
+                        <button id="clearPlaylistBtn" class="clear-btn" title="一键清空">清空</button>
+                    </div>
+                </div>
+                <div class="playlist-items" id="playlistItems"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 设置按钮（页面右下角固定） -->
+    <button id="settingsBtn" class="settings-btn" title="设置">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.611 3.611 0 0112 15.6z"/>
+        </svg>
+    </button>
+
+    <!-- 设置面板 -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h3>设置</h3>
+                <button id="settingsClose" class="settings-close">&times;</button>
+            </div>
+            <div class="settings-body">
+
+                <!-- 背景图片 -->
+                <div class="setting-group">
+                    <div class="setting-label">背景图片</div>
+                    <div class="setting-row">
+                        <input type="file" id="bgFileInput" accept="image/*">
+                    </div>
+                    <div class="setting-row">
+                        <input type="text" id="bgUrlInput" placeholder="或输入图片 URL..." class="setting-input">
+                        <button id="bgUrlApply" class="setting-btn">应用</button>
+                    </div>
+                    <button id="bgRemove" class="setting-btn setting-btn-sm">移除背景图</button>
+                </div>
+
+                <!-- 主题颜色 -->
+                <div class="setting-group">
+                    <div class="setting-label">主题颜色</div>
+                    <div class="theme-options" id="themeOptions">
+                        <div class="theme-item" data-theme="purple">
+                            <div class="theme-swatch" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)"></div>
+                            <span>极光紫</span>
+                        </div>
+                        <div class="theme-item" data-theme="blue">
+                            <div class="theme-swatch" style="background:linear-gradient(135deg,#4facfe,#00f2fe)"></div>
+                            <span>深海蓝</span>
+                        </div>
+                        <div class="theme-item" data-theme="orange">
+                            <div class="theme-swatch" style="background:linear-gradient(135deg,#f093fb,#f5576c)"></div>
+                            <span>落日橙</span>
+                        </div>
+                        <div class="theme-item" data-theme="green">
+                            <div class="theme-swatch" style="background:linear-gradient(135deg,#43e97b,#38f9d7)"></div>
+                            <span>翡翠绿</span>
+                        </div>
+                        <div class="theme-item" data-theme="pink">
+                            <div class="theme-swatch" style="background:linear-gradient(135deg,#fccb90,#d57eeb)"></div>
+                            <span>樱花粉</span>
+                        </div>
+                        <div class="theme-item" data-theme="custom">
+                            <div class="theme-swatch theme-swatch-custom">
+                                <input type="color" id="customColorPicker" value="#a18cd1">
+                            </div>
+                            <span>自定义</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 歌词 -->
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <label class="toggle">
+                            <input type="checkbox" id="showLyrics" checked>
+                            <span class="toggle-track"></span>
+                        </label>
+                        <span>歌词显示</span>
+                    </div>
+                </div>
+
+                <!-- 播放列表显示 -->
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <label class="toggle">
+                            <input type="checkbox" id="showPlaylist" checked>
+                            <span class="toggle-track"></span>
+                        </label>
+                        <span>显示播放列表</span>
+                    </div>
+                </div>
+
+                <!-- 导入导出 -->
+                <div class="setting-group">
+                    <div class="setting-label">配置管理</div>
+                    <div class="setting-row">
+                        <button id="exportConfigBtn" class="setting-btn">导出配置</button>
+                        <label class="setting-btn" style="cursor:pointer;">
+                            导入配置
+                            <input type="file" id="importConfigInput" accept=".json" style="display:none;">
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioPlayer"></audio>
+    <script src="{{ url_for('static', filename='js/player.js') }}"></script>
+</body>
+</html>
